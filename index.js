@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         ExportCivitAIMetadata
-// @namespace    http://tampermonkey.net/
+// @namespace    https://github.com/magicFeirl/ExportCivitAIMetadata.git
 // @version      0.1
 // @description  导出 civitai.com 的 safetensors 模型元数据 / Export .safetensor file's metadata from civitAI
 // @author       ctrn43062
@@ -151,7 +151,10 @@ function init() {
       if (!json) {
         return
       }
-
+      if (!Object.keys(json.__metadata__).length) {
+        alert('No metadata in this model')
+        return 
+      }
       // export __metadata__ to .txt file
       downloadText(stringifyObject(json.__metadata__ || {}), filename)
     }).finally(() => {
