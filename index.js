@@ -6,7 +6,6 @@
 // @author       ctrn43062
 // @match        https://civitai.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=civitai.com
-// @grant        none
 // @license      MIT
 // ==/UserScript==
 
@@ -37,7 +36,7 @@ class SafetensorsHeaderReader {
       return console.error('No model url')
     }
 
-    const headerLength = await this.getHeaderLengthFromURL(url, offset)
+    const headerLength = await this.getHeaderLengthFromURL(url, BigInt(offset))
 
     if (headerLength <= 0) {
       return {
@@ -145,8 +144,9 @@ function init() {
       }
 
       return json
-    }).catch(() => {
-      alert('error: Network error')
+    }).catch((error) => {
+      alert('error: Network error:', error)
+      console.error(error)
     }).then(json => {
       if (!json) {
         return
@@ -160,8 +160,8 @@ function init() {
   }
 }
 
-function initPageChangeObserver(callback) {
-  const ob = new MutationObserver((mutationList) => {
+function initPageChangeObserver(callback, window) {
+  const ob = new window.MutationObserver((mutationList) => {
     if (mutationList.some(record => record.type === 'childList')) {
       // model detail page
       if (/civitai\.com\/models\/\d+/.test(location.href)) {
@@ -170,11 +170,11 @@ function initPageChangeObserver(callback) {
     }
   })
 
-  ob.observe(document.querySelector('title'), { childList: true, subtree: true })
+  ob.observe(window.document.querySelector('title'), { childList: true, subtree: true })
 
   return ob
 }
 
 (function () {
-  initPageChangeObserver(init)
+  initPageChangeObserver(init, unsafeWindow || window)
 })();
