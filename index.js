@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         ExportCivitAIMetadata
 // @namespace    https://github.com/magicFeirl/ExportCivitAIMetadata.git
-// @version      0.1
 // @description  导出 civitai.com 的 safetensors 模型元数据 / Export .safetensor file's metadata from civitAI
 // @author       ctrn43062
 // @match        https://civitai.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=civitai.com
+// @version      0.2
+// @note         0.2 修复某些情况下复制按钮没有出现的bug
+// @note         0.1 init
 // @license      MIT
 // ==/UserScript==
 
@@ -15,8 +17,8 @@
 **/
 class SafetensorsHeaderReader {
   static async getHeaderLengthFromURL(url, offset = 0) {
-    // 不知道为什么 range 返回的 length 少 7 bytes
     const resp = await fetch(url, { headers: { range: 'bytes=0-7' } })
+
     try {
       const buffer = new BigUint64Array(await resp.arrayBuffer()).buffer
       return new DataView(buffer).getBigUint64(0, true) + offset
@@ -28,9 +30,6 @@ class SafetensorsHeaderReader {
 
   }
 
-  /*
-  * offset {Number} 有些网站 range 头返回的数据比实际指定的少 offset 个，需要单独指定
-  */
   static async readFromURL(url, offset = 0) {
     if (!url) {
       return console.error('No model url')
@@ -60,7 +59,7 @@ function createCopyHeaderButton() {
   if (!downloadBtn) {
     // waiting for DOM loaded
     console.error('can\'t find download button')
-    return
+    return {}
   }
 
   const buttonWrapper = downloadBtn.parentElement.parentElement
@@ -108,6 +107,7 @@ function init() {
 
   btn.onclick = () => {
     const isSafetensor = [...header.querySelectorAll('.mantine-Text-root')].map(el => el.textContent).some(text => text.toLowerCase() === 'safetensor')
+
     function stringifyObject(obj) {
       return JSON.stringify(obj, (_, v) => {
         if (typeof v === 'string') {
@@ -151,12 +151,16 @@ function init() {
       if (!json) {
         return
       }
+
+      // 避免 undefined 或 null
+      json.__metadata__ = json.__metadata__ || {}
+
       if (!Object.keys(json.__metadata__).length) {
-        alert('No metadata in this model')
-        return 
+        alert('This model has no metadata')
+        return
       }
       // export __metadata__ to .txt file
-      downloadText(stringifyObject(json.__metadata__ || {}), filename)
+      downloadText(stringifyObject(json.__metadata__), filename)
     }).finally(() => {
       btn.removeAttribute('disabled')
     })
@@ -178,6 +182,18 @@ function initPageChangeObserver(callback, window) {
   return ob
 }
 
+function findCopyButton(callback) {
+  setTimeout(() => {
+    if (!document.querySelector('#CVI-copy-btn')) {
+      findCopyButton(callback)
+      callback()
+    }
+  }, 50)
+}
+
 (function () {
+  findCopyButton(init)
+
+  // For SPA
   initPageChangeObserver(init, unsafeWindow || window)
 })();
