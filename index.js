@@ -11,6 +11,8 @@
 // @note         0.2 fix: 修复某些情况下复制按钮没有出现的bug
 // @note         0.1 init
 // @license      MIT
+// @downloadURL https://update.greasyfork.org/scripts/467975/ExportCivitAIMetadata.user.js
+// @updateURL https://update.greasyfork.org/scripts/467975/ExportCivitAIMetadata.meta.js
 // ==/UserScript==
 
 /**
@@ -203,12 +205,18 @@ function initPageChangeObserver(callback, window) {
   return ob
 }
 
+const MAX_FIND_BUTTON_REPEAT_COUNT = 100
 function findCopyButton(init) {
+  if(findCopyButton.REPEAT_COUNT > MAX_FIND_BUTTON_REPEAT_COUNT) {
+    findCopyButton.REPEAT_COUNT = 0
+    return
+  }
+
   setTimeout(() => {
     if (!document.querySelector('#CVI-copy-btn')) {
       findCopyButton(init)
       init()
-      console.log('find')
+      findCopyButton.REPEAT_COUNT = (findCopyButton.REPEAT_COUNT || 0) + 1
     }
   }, 50)
 }
