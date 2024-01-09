@@ -5,8 +5,10 @@
 // @author       ctrn43062
 // @match        https://civitai.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=civitai.com
-// @version      0.2
-// @note         0.2 修复某些情况下复制按钮没有出现的bug
+// @version      0.4
+// @note         0.4 fix: 修改获取文件名逻辑
+// @note         0.3 fix: 适配新版UI @gustproof
+// @note         0.2 fix: 修复某些情况下复制按钮没有出现的bug
 // @note         0.1 init
 // @license      MIT
 // ==/UserScript==
@@ -54,18 +56,26 @@ function createCopyHeaderButton() {
   const icon = `<?xml version="1.0" ?><!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
     <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 8V7C10 6.05719 10 5.58579 10.2929 5.29289C10.5858 5 11.0572 5 12 5H17C17.9428 5 18.4142 5 18.7071 5.29289C19 5.58579 19 6.05719 19 7V12C19 12.9428 19 13.4142 18.7071 13.7071C18.4142 14 17.9428 14 17 14H16M7 19H12C12.9428 19 13.4142 19 13.7071 18.7071C14 18.4142 14 17.9428 14 17V12C14 11.0572 14 10.5858 13.7071 10.2929C13.4142 10 12.9428 10 12 10H7C6.05719 10 5.58579 10 5.29289 10.2929C5 10.5858 5 11.0572 5 12V17C5 17.9428 5 18.4142 5.29289 18.7071C5.58579 19 6.05719 19 7 19Z" stroke="#fff" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 
-  const downloadBtn = document.querySelector('.mantine-Group-root .mantine-Stack-root a[download]')
+  // const downloadBtns = [...document.querySelectorAll('.mantine-Group-root a.mantine-UnstyledButton-root.mantine-Button-root[href^="/api"]')]
+  // VAE or Model etc...
+  // if(!downloadBtns.length || !downloadBtns.filter(a => a.href.)) {
+
+  // }
+  const downloadBtn = document.querySelector('a.mantine-1i0p07i[href^="/api"]')
 
   if (!downloadBtn) {
     // waiting for DOM loaded
-    console.error('can\'t find download button')
+    console.warn('can\'t find download button')
     return {}
+  } else {
+    console.log(downloadBtn, 'download button finded')
   }
 
-  const buttonWrapper = downloadBtn.parentElement.parentElement
+  const buttonWrapper = downloadBtn.parentElement
 
   const btnCopy = buttonWrapper.lastChild.cloneNode(true)
 
+  // btnCopy.firstChild.style.backgroundColor = '#868e96'
   btnCopy.setAttribute('id', 'CVI-copy-btn')
   btnCopy.setAttribute('title', 'Export model\'s metadata')
 
@@ -94,6 +104,11 @@ function downloadText(text, name) {
 }
 
 function init() {
+  // not model page
+  if (!location.href.match(/civitai.com\/models\/\d+/)) {
+    return;
+  }
+
   // we have init the copy button
   if (document.querySelector('#CVI-copy-btn')) {
     return;
@@ -127,14 +142,20 @@ function init() {
       return;
     }
 
-    const modelURL = header.querySelector('a[download]').href
+    const modelURLEl = header.querySelector('a[href^="/api"]')
+    if (!modelURLEl) {
+      return alert('can\'t find the download url')
+    }
+
+    const modelURL = modelURLEl.href
     const RANGE_OFFSET = 7
 
     const { pathname } = location
     // model title + model url id = filename
-    const title = document.querySelector('#freezeBlock h1').textContent
-    const path = pathname.substring(pathname.lastIndexOf('/') + 1)
-    const filename = title + '_' + path + '_metadata.json'
+    // v0.4 get title from url path
+    const title = location.pathname.slice(1).replace(/\//g, '_')
+    // const path = pathname.substring(pathname.lastIndexOf('/') + 1)
+    const filename = title + '_metadata.json'
 
     btn.setAttribute('disabled', true)
     SafetensorsHeaderReader.readFromURL(modelURL, RANGE_OFFSET).then((json) => {
@@ -182,11 +203,12 @@ function initPageChangeObserver(callback, window) {
   return ob
 }
 
-function findCopyButton(callback) {
+function findCopyButton(init) {
   setTimeout(() => {
     if (!document.querySelector('#CVI-copy-btn')) {
-      findCopyButton(callback)
-      callback()
+      findCopyButton(init)
+      init()
+      console.log('find')
     }
   }, 50)
 }
@@ -195,5 +217,5 @@ function findCopyButton(callback) {
   findCopyButton(init)
 
   // For SPA
-  initPageChangeObserver(init, unsafeWindow || window)
+  initPageChangeObserver(() => findCopyButton(init), unsafeWindow || window)
 })();
