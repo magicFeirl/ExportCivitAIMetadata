@@ -5,7 +5,8 @@
 // @author       ctrn43062
 // @match        https://civitai.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=civitai.com
-// @version      0.5
+// @version      0.6
+// @note         0.6 feat: 添加 cmd args 导出
 // @note         0.5 refactor: 重构代码
 // @note         0.4 fix: 修改获取文件名逻辑
 // @note         0.3 fix: 适配新版UI @gustproof
@@ -81,6 +82,8 @@ class civitAI {
     thumbUpBtn: `.mantine-mwqi5l > .mantine-1g4q40w > :last-child`
   }
 
+  CMD_ARGS = ["ss_output_name", "ss_learning_rate", "ss_text_encoder_lr", "ss_unet_lr", "ss_gradient_checkpointing", "ss_gradient_accumulation_steps", "ss_max_train_steps", "ss_lr_warmup_steps", "ss_lr_scheduler", "ss_network_module", "ss_network_dim", "ss_network_alpha", "ss_network_dropout", "ss_mixed_precision", "ss_full_fp16", "ss_v2", "ss_clip_skip", "ss_max_token_length", "ss_cache_latents", "ss_seed", "ss_lowram", "ss_noise_offset", "ss_multires_noise_iterations", "ss_multires_noise_discount", "ss_adaptive_noise_scale", "ss_zero_terminal_snr", "ss_training_comment", "ss_max_grad_norm", "ss_caption_dropout_rate", "ss_caption_dropout_every_n_epochs", "ss_caption_tag_dropout_rate", "ss_face_crop_aug_range", "ss_prior_loss_weight", "ss_min_snr_gamma", "ss_scale_weight_norms", "ss_ip_noise_gamma", "ss_debiased_estimation", "ss_noise_offset_random_strength", "ss_ip_noise_gamma_random_strength", "ss_loss_type", "ss_huber_schedule", "ss_huber_c"]
+
   getModelDownloadURL() {
     const dlBtn = document.querySelector(this.SELECTORS.downloadBtn)
     if (!dlBtn) {
@@ -148,7 +151,7 @@ class civitAI {
   }
 
   async exportMetadata() {
-    const filename = `${this.getModelPageId()}_${this.getModelTitle()}.json`
+    const filename = `${this.getModelPageId()}_${this.getModelTitle()}`
 
     const metadata = await this.getMetadata(this.getModelDownloadURL())
 
@@ -158,7 +161,13 @@ class civitAI {
       return
     }
 
-    downloadFile(filename, metadata)
+    downloadFile(`${filename}.json`, metadata)
+
+    const cmd_args = this.CMD_ARGS.map(arg => [arg.replace('ss_', ''), metadata[arg]]).filter(([name, value]) => value != undefined).map(([name, value]) => `--${name} ${value} \\`).join('\n')
+    if (cmd_args) {
+      downloadFile(`${filename}_cmd_args.txt`, cmd_args)
+    }
+
     console.log(filename, metadata);
   }
 }
