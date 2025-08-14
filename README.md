@@ -18,7 +18,7 @@ https://www.tampermonkey.net/
 
 [[GreasyFork\]](https://greasyfork.org/zh-CN/scripts/467975-exportcivitaimetadata)
 
-[[Github\]](https://raw.githubusercontent.com/magicFeirl/ExportCivitAIMetadata/main/index.js)
+[[Github\]](https://raw.githubusercontent.com/magicFeirl/ExportCivitAIMetadata/main/index-v2.js)
 
 
 
