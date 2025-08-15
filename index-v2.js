@@ -5,7 +5,8 @@
 // @author       ctrn43062
 // @match        https://civitai.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=civitai.com
-// @version      0.9
+// @version      1.0
+// @note         1.0 fix: 修复 versionId 获取问题
 // @note         0.9 fix: 修复下载按钮没有显示的问题；feat：修改下载文件名
 // @note         0.8 feat: 获取链接方式从 href -> version id
 // @note         0.7 fix: 适配新样式
@@ -79,8 +80,8 @@ class civitAI {
     SELECTORS = {
         // 模型下载链接按钮（旧版）
         downloadBtn: '[data-tour="model:download"]',
-        // --获取模型 versionId（新版）-- 已废弃
-        versionId: '[data-tour="model:download"]',
+        // 获取模型 versionId（新版)
+        versionId: 'div > code:nth-child(4)',
         modelTitle: 'h1',
         modelOprationGroup: '#main div.flex-1.\\*\\:grow.m_4081bf90.mantine-Group-root',
         // 读取 metadata 的按钮添加位置（在该选择器后）
@@ -91,11 +92,13 @@ class civitAI {
 
     getVersionId() {
         const versionId = location.search.match(/\?modelVersionId=(\d+)/)
-        if(!versionId) {
+        const versionIdAIR = document.querySelector(this.SELECTORS.versionId).textContent
+
+        if(!versionId && !versionIdAIR) {
             throw Error('无法找到模型 VersionID / Can\'t find the model\'s version id')
         }
 
-        return versionId[1]
+        return versionIdAIR || versionId[1]
     }
 
     getModelDownloadURL() {
